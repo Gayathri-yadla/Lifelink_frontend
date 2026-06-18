@@ -1,99 +1,238 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../store/useAuthStore';
-import api from '../services/api';
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  
+function Login() {
+
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
 
-  const handleLogin = async (e) => {
+  const [formData, setFormData] = useState({
+    phone: "",
+    password: ""
+  });
+
+  const handleChange = (e) => {
+
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+
+  };
+
+  const handleSubmit = async (e) => {
+
     e.preventDefault();
-    setError(null);
-    setLoading(true);
 
     try {
-      // Hit the backend login route
-      const response = await api.post('/auth/login', { email, password });
-      
-      const { _id, name, email: userEmail, phone, role, token } = response.data;
 
-      // Save to Zustand and LocalStorage
-      login({ _id, name, email: userEmail, phone, role }, token);
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        formData
+      );
 
-      // Route them to the correct dashboard based on their role
-      if (role === 'Admin') {
-        navigate('/admin/dashboard');
-      } else if (role === 'Hospital') {
-        navigate('/hospital/dashboard');
-      } else {
-        navigate('/user/dashboard');
+      alert("Login Successful");
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(res.data.user)
+      );
+
+      if (
+        res.data.user.role ===
+        "hospital"
+      ) {
+
+        navigate("/hospital");
+
       }
-      
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to connect to the server.');
-    } finally {
-      setLoading(false);
+      else if (
+        res.data.user.role ===
+        "admin"
+      ) {
+
+        navigate("/admin");
+
+      }
+      else {
+
+        navigate("/dashboard");
+
+      }
+
+    } catch (error) {
+
+      alert(
+        error.response?.data?.message ||
+        "Login Failed"
+      );
+
+      console.log(error);
+
     }
+
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md border border-gray-200">
-        <h2 className="text-3xl font-bold text-center text-red-600 mb-6">LifeLink</h2>
-        <h3 className="text-xl font-semibold text-center text-gray-800 mb-6">Sign in to your account</h3>
-        
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-center text-sm">
-            {error}
-          </div>
-        )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input 
-              type="email" 
-              required 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 outline-none"
-              placeholder="you@example.com"
-            />
-          </div>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f3f4f6",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "20px"
+      }}
+    >
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input 
-              type="password" 
-              required 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 outline-none"
-              placeholder="••••••••"
-            />
-          </div>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          width: "420px",
+          backgroundColor: "white",
+          padding: "35px",
+          borderRadius: "15px",
+          boxShadow:
+            "0 0 20px rgba(0,0,0,0.1)"
+        }}
+      >
 
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition disabled:opacity-50"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-        
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account? <a href="/register" className="text-red-600 hover:underline">Register here</a>
+        <h1
+          style={{
+            textAlign: "center",
+            color: "#dc2626",
+            marginBottom: "10px"
+          }}
+        >
+          LifeLink
+        </h1>
+
+        <p
+          style={{
+            textAlign: "center",
+            color: "#6b7280",
+            marginBottom: "25px"
+          }}
+        >
+          Welcome Back
         </p>
-      </div>
+
+        <label>
+          Phone Number
+        </label>
+
+        <input
+          type="text"
+          name="phone"
+          placeholder="Enter Phone Number"
+          value={formData.phone}
+          onChange={handleChange}
+          style={inputStyle}
+          required
+        />
+
+        <label>
+          Password
+        </label>
+
+        <input
+          type="password"
+          name="password"
+          placeholder="Enter Password"
+          value={formData.password}
+          onChange={handleChange}
+          style={inputStyle}
+          required
+        />
+
+        <button
+          type="submit"
+          style={{
+            width: "100%",
+            padding: "14px",
+            backgroundColor: "#dc2626",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            marginTop: "15px",
+            cursor: "pointer",
+            fontWeight: "bold",
+            fontSize: "16px"
+          }}
+        >
+          Login
+        </button>
+
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: "20px",
+            color: "#6b7280"
+          }}
+        >
+          Don't have an account?
+        </p>
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/register")
+          }
+          style={{
+            width: "100%",
+            padding: "14px",
+            backgroundColor: "white",
+            color: "#dc2626",
+            border:
+              "2px solid #dc2626",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "bold"
+          }}
+        >
+          Create Account
+        </button>
+
+        <p
+          onClick={() =>
+            navigate("/")
+          }
+          style={{
+            textAlign: "center",
+            marginTop: "20px",
+            color: "#dc2626",
+            cursor: "pointer",
+            fontWeight: "bold"
+          }}
+        >
+          Back To Home
+        </p>
+
+      </form>
+
     </div>
+
   );
+
+}
+
+const inputStyle = {
+
+  width: "100%",
+
+  padding: "12px",
+
+  border: "1px solid #d1d5db",
+
+  borderRadius: "8px",
+
+  marginTop: "5px",
+
+  marginBottom: "15px",
+
+  boxSizing: "border-box"
+
 };
 
 export default Login;
