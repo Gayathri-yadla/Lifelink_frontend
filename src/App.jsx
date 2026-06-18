@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import HospitalDashboard from './pages/HospitalDashboard';
+import LiveRadar from './pages/LiveRadar';
 
 // We will build these pages in the next phase!
 const Placeholder = ({ title }) => <div className="p-10 text-2xl font-bold">{title}</div>;
@@ -25,7 +26,8 @@ function App() {
         {/* HOSPITAL ROUTES */}
         <Route element={<ProtectedRoute allowedRoles={['Hospital']} />}>
           <Route path="/hospital/dashboard" element={<HospitalDashboard />} />
-          <Route path="/hospital/radar/:requestId" element={<Placeholder title="Live Tracking Radar" />} />
+          {/* SWAP THIS LINE */}
+          <Route path="/hospital/radar/:requestId" element={<LiveRadar />} />
         </Route>
 
         {/* USER/DONOR ROUTES */}

@@ -82,7 +82,7 @@ const Register = () => {
 
           {/* Core Fields */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{formData.role === 'Hospital' ? 'Admin Full Name' : 'Full Name'}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{formData.role === 'Hospital' ? 'Hospital Admin Name' : 'Full Name'}</label>
             <input type="text" name="name" required value={formData.name} onChange={handleChange} className="w-full px-4 py-2 border rounded outline-none focus:border-red-500" />
           </div>
 

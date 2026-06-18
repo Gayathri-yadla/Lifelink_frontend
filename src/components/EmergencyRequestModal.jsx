@@ -16,27 +16,28 @@ const EmergencyRequestModal = ({ isOpen, onClose, onSuccess }) => {
   const [locationError, setLocationError] = useState(null);
 
   // Grab the GPS coordinates the moment the modal opens
-  useEffect(() => {
-    if (isOpen) {
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setLocation({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
-            setLocationError(null);
-          },
-          (err) => {
-            console.error(err);
-            setLocationError("Location access denied. We need GPS to find nearby donors.");
-          }
-        );
-      } else {
-        setLocationError("Geolocation is not supported by your browser.");
-      }
+const [locationLoading, setLocationLoading] = useState(true);
+
+useEffect(() => {
+  if (isOpen) {
+    setLocationLoading(true); // Reset loading when opened
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+          setLocationLoading(false); // Success!
+        },
+        (err) => {
+          setLocationError("Location access denied. Please enable GPS in your browser settings.");
+          setLocationLoading(false);
+        }
+      );
     }
-  }, [isOpen]);
+  }
+}, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -45,37 +46,36 @@ const EmergencyRequestModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
+  e.preventDefault();
+  setError(null);
 
-    // Block submission if we don't have coordinates for the Redis radar
-    if (!location.latitude || !location.longitude) {
-      setError("Cannot broadcast request without valid GPS coordinates.");
-      return;
-    }
+  if (!location.latitude || !location.longitude) {
+    setError("Cannot broadcast request without valid GPS coordinates.");
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      // Merge the form data with the GPS coordinates
-      const payload = {
-        ...formData,
-        latitude: location.latitude,
-        longitude: location.longitude
-      };
+  try {
+    const payload = {
+      ...formData,
+      // Change this to match the GeoJSON schema your backend expects
+      operationTime: new Date(formData.operationTime).toISOString(),
+      hospitalLocation: {
+        type: 'Point',
+        coordinates: [location.longitude, location.latitude] // Note: Longitude first!
+      }
+    };
 
-      // Fire the payload to the backend
-      await api.post('/request', payload); 
-      
-      // Refresh the dashboard and close the modal
-      onSuccess();
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to broadcast emergency.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    await api.post('/request/create', payload); 
+    onSuccess();
+    onClose();
+  } catch (err) {
+    setError(err.response?.data?.message || 'Failed to broadcast emergency.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -148,10 +148,10 @@ const EmergencyRequestModal = ({ isOpen, onClose, onSuccess }) => {
             </button>
             <button 
               type="submit" 
-              disabled={loading || !!locationError}
+              disabled={loading || locationLoading || !!locationError}
               className="flex-1 bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition disabled:opacity-50"
             >
-              {loading ? 'Broadcasting...' : 'Confirm Request'}
+              {locationLoading ? 'Getting GPS...' : loading ? 'Broadcasting...' : 'Confirm Request'}
             </button>
           </div>
         </form>
